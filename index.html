@@ -204,21 +204,22 @@
     <label>你更喜欢和一群人一起活动还是独自活动？</label>
     <input type="radio" name="socialPreference" value="group"> 和一群人一起活动  
     <input type="radio" name="socialPreference" value="alone"> 独自活动  
-
-    <label>你更喜欢和一群人一起活动还是独自活动？</label>
-    <input type="radio" name="socialPreference" value="group" required> 和一群人一起活动
-    <input type="radio" name="socialPreference" value="alone"> 独自活动
+    
     <label>你在面对挑战时通常会：</label>
     <input type="radio" name="challengeResponse" value="confident" required> 充满信心地迎接
     <input type="radio" name="challengeResponse" value="nervous"> 感到紧张
+    
     <label>你更喜欢理论学习还是实践操作？</label>
     <input type="radio" name="learningPreference" value="theory" required> 理论学习
     <input type="radio" name="learningPreference" value="practice"> 实践操作
+    
     <label>你是否喜欢探索新事物？</label>
     <input type="radio" name="exploration" value="yes" required> 是
     <input type="radio" name="exploration" value="no"> 否
+    
     <label for="futurePlan">未来想从事的职业（可大致描述）：</label>
     <input type="text" id="futurePlan">
+    
     <label for="physicsScore">物理成绩(0 - 100)：</label>
     <input type="number" id="physicsScore" min="0" max="100" oninput="validateScore(this)" onfocus="clearError(this)">
     <label for="chemistryScore">化学成绩(0 - 100)：</label>
