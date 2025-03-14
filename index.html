@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高中选科与未来规划推荐小程序</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        select,
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+       .error-input {
+            border-color: red;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        #recommendation {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+       .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0, 123, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #007BFF;
+            animation: spin 1s ease-in-out infinite;
+            -webkit-animation: spin 1s ease-in-out infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            to {
+                -webkit-transform: rotate(360deg);
+                transform: rotate(360deg);
+            }
+        }
+
+       .error {
+            color: red;
+        }
+
+        /* 分页样式 */
+       .pagination {
+            margin-top: 15px;
+            text-align: center;
+        }
+
+       .pagination button {
+            margin: 0 5px;
+        }
+
+       .selected {
+            background-color: #d4edda;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>高中选科与未来规划推荐小程序</h1>
+    <label for="favoriteSubject">选择你最喜欢的学科：</label>
+    <select id="favoriteSubject">
+        <option value="physics">物理</option>
+        <option value="chemistry">化学</option>
+        <option value="biology">生物</option>
+        <option value="history">历史</option>
+        <option value="geography">地理</option>
+        <option value="politics">政治</option>
+    </select>
+    <label for="secondFavoriteSubject">选择你次喜欢的学科（可选）：</label>
+    <select id="secondFavoriteSubject">
+        <option value="">无</option>
+        <option value="physics">物理</option>
+        <option value="chemistry">化学</option>
+        <option value="biology">生物</option>
+        <option value="history">历史</option>
+        <option value="geography">地理</option>
+        <option value="politics">政治</option>
+    </select>
+    <!-- 丰富性格分析调查问卷 -->
+    <label>你更喜欢和一群人一起活动还是独自活动？</label>
+    <input type="radio" name="socialPreference" value="group" required> 和一群人一起活动
+    <input type="radio" name="socialPreference" value="alone"> 独自活动
+    <label>你在面对挑战时通常会：</label>
+    <input type="radio" name="challengeResponse" value="confident" required> 充满信心地迎接
+    <input type="radio" name="challengeResponse" value="nervous"> 感到紧张
+    <label>你更喜欢理论学习还是实践操作？</label>
+    <input type="radio" name="learningPreference" value="theory" required> 理论学习
+    <input type="radio" name="learningPreference" value="practice"> 实践操作
+    <label>你是否喜欢探索新事物？</label>
+    <input type="radio" name="exploration" value="yes" required> 是
+    <input type="radio" name="exploration" value="no"> 否
+    <label for="futurePlan">未来想从事的职业（可大致描述）：</label>
+    <input type="text" id="futurePlan">
+    <label for="physicsScore">物理成绩(0 - 100)：</label>
+    <input type="number" id="physicsScore" min="0" max="100" oninput="validateScore(this)" onfocus="clearError(this)">
+    <label for="chemistryScore">化学成绩(0 - 100)：</label>
+    <input type="number" id="chemistryScore" min="0" max="100" oninput="validateScore(this)" onfocus="clearError(this)">
+    <label for="biologyScore">生物成绩(0 - 100)：</label>
+    <input type="number" id="biologyScore" min="0" max="100" oninput="validateScore(this)" onfocus="clearError(this)">
+    <label for="historyScore">历史成绩(0 - 100)：</label>
+    <input type="number" id="historyScore" min="0" max="100" oninput="validateScore(this)" onfocus="clearError(this)">
+    <label for="geographyScore">地理成绩(0 - 100)：</label>
+    <input type="number" id="geographyScore" min="0" max="100" oninput="validateScore(this)" onfocus="clearError(this)">
+    <label for="politicsScore">政治成绩(0 - 100)：</label>
+    <input type="number" id="politicsScore" min="0" max="100" oninput="validateScore(this)" onfocus="clearError(this)">
+    <button id="recommendButton" onclick="getRecommendation()">获取推荐选科与规划建议</button>
+    <button id="resetButton" onclick="resetForm()">重置表单</button>
+    <div id="recommendation"></div>
+    <div id="errorMessage" class="error"></div>
+    <div class="pagination" id="pagination"></div>
+
+    <script>
+        const allCombinations = [
+            'physics,chemistry,biology',
+            'physics,chemistry,geography',
+            'physics,chemistry,politics',
+            'physics,biology,geography',
+            'physics,biology,politics',
+            'physics,geography,politics',
+            'history,geography,politics',
+            'history,geography,biology',
+            'history,geography,chemistry',
+            'history,politics,biology',
+            'history,politics,chemistry',
+            'history,biology,chemistry'
+        ];
+
+        const subjectCorrelation = {
+            physics: { chemistry: 0.8, biology: 0.7, geography: 0.5, politics: 0.3 },
+            chemistry: { physics: 0.8, biology: 0.7, geography: 0.5, politics: 0.3 },
+            biology: { physics: 0.7, chemistry: 0.7, geography: 0.6, politics: 0.4 },
+            history: { geography: 0.8, politics: 0.8, biology: 0.4, chemistry: 0.4 },
+            geography: { history: 0.8, politics: 0.8, physics: 0.5, chemistry: 0.5, biology: 0.6 },
+            politics: { history: 0.8, geography: 0.8, physics: 0.3, chemistry: 0.3, biology: 0.4 }
+        };
+
+        let pastExamData = {
+            'physics,chemistry,biology': 0.3,
+            'history,geography,politics': 0.25,
+            'physics,chemistry,geography': 0.15,
+            'history,politics,biology': 0.1,
+            'physics,biology,geography': 0.08,
+            'physics,chemistry,politics': 0.07,
+            'physics,biology,politics': 0.05,
+            'physics,geography,politics': 0.04,
+            'history,geography,biology': 0.03,
+            'history,geography,chemistry': 0.02,
+            'history,politics,chemistry': 0.01,
+            'history,biology,chemistry': 0.005
+        };
+
+        const correlationWeight = 0.3;
+        const pastExamWeight = 0.2;
+        const personalityWeight = 0.15;
+        const futurePlanWeight = 0.2;
+        const scoreWeight = 0.15;
+
+        const getElement = (id) => document.getElementById(id);
+
+        function validateScore(input) {
+            if (isNaN(parseInt(input.value)) || input.value < 0 || input.value > 100) {
+                input.classList.add('error-input');
+                input.setCustomValidity('请输入0到100之间的数字');
+            } else {
+                input.classList.remove('error-input');
+                input.setCustomValidity('');
+            }
+        }
+
+        function clearError(input) {
+            input.classList.remove('error-input');
+            input.setCustomValidity('');
+        }
+
+        function validateForm() {
+            const favoriteSubject = getElement('favoriteSubject').value;
+            const secondFavoriteSubject = getElement('secondFavoriteSubject').value;
+            const socialPreference = document.querySelector('input[name="socialPreference"]:checked');
+            const challengeResponse = document.querySelector('input[name="challengeResponse"]:checked');
+            const learningPreference = document.querySelector('input[name="learningPreference"]:checked');
+            const exploration = document.querySelector('input[name="exploration"]:checked');
+
+            if (!favoriteSubject) {
+                return '请选择你最喜欢的学科';
+            }
+
+            if (favoriteSubject === secondFavoriteSubject && secondFavoriteSubject) {
+                return '最喜欢和次喜欢的学科不能相同';
+            }
+
+            if (!socialPreference) {
+                return '请选择你更喜欢和一群人一起活动还是独自活动';
+            }
+
+            if (!challengeResponse) {
+                return '请选择你在面对挑战时的通常反应';
+            }
+
+            if (!learningPreference) {
+                return '请选择你更喜欢理论学习还是实践操作';
+            }
+
+            if (!exploration) {
+                return '请选择你是否喜欢探索新事物';
+            }
+
+            return null;
+        }
+
+        // 根据问卷回答确定性格
+        function determinePersonality() {
+            const socialPreference = document.querySelector('input[name="socialPreference"]:checked').value;
+            const challengeResponse = document.querySelector('input[name="challengeResponse"]:checked').value;
+            const learningPreference = document.querySelector('input[name="learningPreference"]:checked').value;
+            const exploration = document.querySelector('input[name="exploration"]:checked').value;
+
+            if (socialPreference === 'group' && challengeResponse === 'confident' && exploration === 'yes') {
+                return 'extroverted - explorer';
+            } else if (socialPreference === 'alone' && challengeResponse === 'nervous' && exploration === 'no') {
+                return 'introverted - conservative';
+            } else if (learningPreference === 'theory') {
+                return 'theoretical - thinker';
+            } else {
+                return 'practical - doer';
+            }
+        }
+
+        function calculateCorrelationScore(subjects, favoriteSubject, secondFavoriteSubject) {
+            let correlationScore = 0;
+            let hasFavorite = subjects.includes(favoriteSubject);
+            let hasSecondFavorite = subjects.includes(secondFavoriteSubject);
+
+            if (hasFavorite) {
+                subjects.forEach(subject => {
+                    if (subject!== favoriteSubject) {
+                        correlationScore += subjectCorrelation[favoriteSubject][subject] || 0;
+                    }
+                });
+            }
+
+            if (hasSecondFavorite && hasFavorite) {
+                subjects.forEach(subject => {
+                    if (subject!== secondFavoriteSubject && subject!== favoriteSubject) {
+                        correlationScore += subjectCorrelation[secondFavoriteSubject][subject] || 0;
+                    }
+                });
+            }
+
+            return correlationScore;
+        }
+
+        function calculatePersonalityScore(personality, combination) {
+            let personalityScore = 0;
+            if (personality === 'introverted - conservative') {
+                if (combination.includes('physics') || combination.includes('chemistry')) {
+                    personalityScore = 0.8;
+                } else if (combination.includes('history') || combination.includes('politics')) {
+                    personalityScore = 0.6;
+                }
+            } else if (personality === 'extroverted - explorer') {
+                if (combination.includes('geography') || combination.includes('biology')) {
+                    personalityScore = 0.8;
+                } else if (combination.includes('politics')) {
+                    personalityScore = 0.7;
+                }
+            } else if (personality === 'theoretical - thinker') {
+                if (combination.includes('physics') || combination.includes('history')) {
+                    personalityScore = 0.8;
+                }
+            } else {
+                personalityScore = 0.7;
+            }
+            return personalityScore;
+        }
+
+        function calculateFuturePlanScore(futurePlan, combination) {
+            let futurePlanScore = 0;
+            if (futurePlan.includes('工程') || futurePlan.includes('技术')) {
+                if (combination.includes('physics') && combination.includes('chemistry')) {
+                    futurePlanScore = 0.9;
+                } else if (combination.includes('physics') || combination.includes('chemistry')) {
+                    futurePlanScore = 0.7;
+                }
+            } else if (futurePlan.includes('医学') || futurePlan.includes('生物')) {
+                if (combination.includes('biology') && combination.includes('chemistry')) {
+                    futurePlanScore = 0.9;
+                } else if (combination.includes('biology') || combination.includes('chemistry')) {
+                    futurePlanScore = 0.7;
+                }
+            } else if (futurePlan.includes('教育') || futurePlan.includes('文科')) {
+                if (combination.includes('history') || combination.includes('geography') || combination.includes('politics')) {
+                    futurePlanScore = 0.7;
+                }
+            } else if (futurePlan.includes('传媒') || futurePlan.includes('新闻')) {
+                if (combination.includes('history') || combination.includes('politics')) {
+                    futurePlanScore = 0.7;
+                }
+            } else {
+                futurePlanScore = 0.5;
+            }
+            return futurePlanScore;
+        }
+
+        function calculateScoreBasedScore(subjects, scores) {
+            let scoreSum = 0;
+            subjects.forEach(subject => {
+                scoreSum += scores[subject] || 0;
+            });
+            const averageScore = scoreSum / subjects.length;
+            return averageScore / 100;
+        }
+
+        function calculateScores(combination, favoriteSubject, secondFavoriteSubject, personality, futurePlan, scores) {
+            const subjects = combination.split(',');
+            const correlationScore = calculateCorrelationScore(subjects, favoriteSubject, secondFavoriteSubject);
+            const pastExamScore = pastExamData[combination] || 0;
+            const personalityScore = calculatePersonalityScore(personality, combination);
+            const futurePlanScore = calculateFuturePlanScore(futurePlan, combination);
+            const scoreBasedScore = calculateScoreBasedScore(subjects, scores);
+
+            return (
+                correlationScore * correlationWeight +
+                pastExamScore * pastExamWeight +
+                personalityScore * personalityWeight +
+                futurePlanScore * futurePlanWeight +
+                scoreBasedScore * scoreWeight
+            );
+        }
+
+        function getRecommendation() {
+            const recommendButton = getElement('recommendButton');
+            const recommendationDiv = getElement('recommendation');
+            const errorMessageDiv = getElement('errorMessage');
+            const paginationDiv = getElement('pagination');
+            recommendButton.disabled = true;
+            recommendButton.innerHTML = '获取中 <span class="loading"></span>';
+            recommendationDiv.innerHTML = '';
+            errorMessageDiv.innerHTML = '';
+            paginationDiv.innerHTML = '';
+
+            const validationError = validateForm();
+            if (validationError) {
+                errorMessageDiv.innerHTML = validationError;
+                recommendButton.disabled = false;
+                recommendButton.innerHTML = '获取推荐选科与规划建议';
+                return;
+            }
+
+            const favoriteSubject = getElement('favoriteSubject').value;
+            const secondFavoriteSubject = getElement('secondFavoriteSubject').value;
+            const personality = determinePersonality();
+            const futurePlan = getElement('futurePlan').value;
+            const scores = {
+                physics: parseInt(getElement('physicsScore').value) || 0,
+                chemistry: parseInt(getElement('chemistryScore').value) || 0,
+                biology: parseInt(getElement('biologyScore').value) || 0,
+                history: parseInt(getElement('historyScore').value) || 0,
+                geography: parseInt(getElement('geographyScore').value) || 0,
+                politics: parseInt(getElement('politicsScore').value) || 0
+            };
+
+            const combinationScores = {};
+            allCombinations.forEach(combination => {
+                combinationScores[combination] = calculateScores(combination, favoriteSubject, secondFavoriteSubject, personality, futurePlan, scores);
+            });
+
+            const sortedCombinations = Object.entries(combinationScores).sort((a, b) => b[1] - a[1]);
+
+            const itemsPerPage = 5;
+            const totalPages = Math.ceil(sortedCombinations.length / itemsPerPage);
+            let currentPage = 1;
+
+            function displayPage(page) {
+                currentPage = page;
+                const startIndex = (page - 1) * itemsPerPage;
+                const endIndex = startIndex + itemsPerPage;
+                const pageCombinations = sortedCombinations.slice(startIndex, endIndex);
+
+                recommendationDiv.innerHTML = '<p>基于你的选择和各项因素，推荐以下选科组合：</p>';
+                pageCombinations.forEach(([combination, score]) => {
+                    const popularity = (pastExamData[combination] * 100).toFixed(2);
+                    const p = document.createElement('p');
+                    p.innerHTML = `${combination} (综合得分: ${score.toFixed(2)}, 选择比例: <span class="popularity">${popularity}%</span>) `;
+                    const selectButton = document.createElement('button');
+                    selectButton.textContent = '选择';
+                    selectButton.onclick = () => saveSelection(combination, p);
+                    p.appendChild(selectButton);
+                    recommendationDiv.appendChild(p);
+                });
+
+                // 简单的未来规划建议
+                let planAdvice = '';
+                if (futurePlan.includes('工程') || futurePlan.includes('技术')) {
+                    planAdvice = '建议你在高中阶段注重物理和化学的学习，多参加相关的科技竞赛和实践活动。同时，培养自己的逻辑思维和解决问题的能力。';
+                } else if (futurePlan.includes('医学') || futurePlan.includes('生物')) {
+                    planAdvice = '高中阶段要学好生物和化学，积极参加生物实验和科研活动。关注医学前沿动态，培养自己的观察力和耐心。';
+                } else if (futurePlan.includes('教育') || futurePlan.includes('文科')) {
+                    planAdvice = '多读历史、地理和政治相关的书籍，提高自己的人文素养。积极参加社会实践和志愿者活动，锻炼自己的沟通和组织能力。';
+                } else if (futurePlan.includes('传媒') || futurePlan.includes('新闻')) {
+                    planAdvice = '注重历史和政治的学习，培养自己的社会洞察力和分析能力。多参加写作和演讲活动，提高自己的表达能力。';
+                } else {
+                    planAdvice = '由于你尚未明确未来职业方向，建议你在高中阶段全面发展，尝试不同的学科和活动，发现自己的兴趣和优势。';
+                }
+                const planAdviceP = document.createElement('p');
+                planAdviceP.textContent = `未来规划建议：${planAdvice}`;
+                recommendationDiv.appendChild(planAdviceP);
+
+                paginationDiv.innerHTML = '';
+                for (let i = 1; i <= totalPages; i++) {
+                    const pageButton = document.createElement('button');
+                    pageButton.textContent = i;
+                    pageButton.onclick = () => displayPage(i);
+                    if (i === currentPage) {
+                        pageButton.disabled = true;
+                    }
+                    paginationDiv.appendChild(pageButton);
+                }
+            }
+
+            if (sortedCombinations.length > 0) {
+                displayPage(1);
+            } else {
+                recommendationDiv.innerHTML = '<p>没有找到合适的推荐组合，请重新选择。</p>';
+            }
+
+            recommendButton.disabled = false;
+            recommendButton.innerHTML = '获取推荐选科与规划建议';
+        }
+
+        function saveSelection(selectedCombination, p) {
+            // 模拟数据更新，实际应用中连接数据库
+            pastExamData[selectedCombination] = (pastExamData[selectedCombination] || 0) + 0.01;
+            const popularity = (pastExamData[selectedCombination] * 100).toFixed(2);
+            p.querySelector('.popularity').textContent = `${popularity}%`;
+            p.classList.add('selected');
+            alert('选择已保存，感谢你的反馈！');
+        }
+
+        function resetForm() {
+            const form = document.querySelector('body');
+            form.reset();
+            const recommendationDiv = getElement('recommendation');
+            const errorMessageDiv = getElement('errorMessage');
+            const paginationDiv = getElement('pagination');
+            recommendationDiv.innerHTML = '';
+            errorMessageDiv.innerHTML = '';
+            paginationDiv.innerHTML = '';
+        }
+    </script>
+</body>
+
+</html>
